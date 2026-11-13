@@ -57,5 +57,7 @@ flowchart TD
 ## 4. Điểm yếu & Bug đã ghi nhận
 - Cờ `debug` bị vô hiệu hóa do `K.getInstance("YouTube")` không nhận tùy chọn `{ debug }`.
 - `Mi.find(r => l.url.includes(r.path))` so khớp chuỗi con toàn URL nên có rủi ro khớp nhầm query string.
-- Trong `Pi()`, nếu `captionTracks` là mảng rỗng (`n.length === 0`) mà `captionLang !== "off"`, truy cập `n[o].baseUrl` sẽ ném `TypeError` và bị `catch` ngoài `Ki()` nuốt lỗi rồi gọi `F.exit()`, bỏ qua luôn bước xóa quảng cáo `Ni()` & `Si()` cho video đó.
+- Trong `Pi()` (`L5566-L5584`), biến `o` khởi tạo bằng `0`; nếu `captionTracks` là mảng rỗng (`n.length === 0`) mà `captionLang !== "off"`, truy cập `n[o].baseUrl` tại `L5574` ném `TypeError` và bị `catch` tại `Ki()` (`L6158-L6161`) nuốt lỗi rồi gọi `F.exit()`, bỏ qua luôn bước xóa quảng cáo `Ni()` & `Si()` cho video đó.
+- **Phân tích thuật toán Sunday trong `ni(l)` (`L5605-L5618`):** Chỉ quét các buffer có `l.length >= 1000`, tạo bảng bước nhảy `Int32Array(256)` mặc định `n + 1 = 7` cho pattern `"pagead"` (`n = 6`), rồi cập nhật `i[e[c]] = n - c`. Khi con trỏ `r === l.length - 6`, biểu thức `i[l[r + n]]` (`L5615`) đọc vượt biên phần tử `l[l.length]` cho giá trị `undefined` (trong JavaScript fallback về `|| n + 1` nên thoát vòng lặp an toàn, không gây lỗi bộ nhớ).
+- **Lớp chuyển đổi `ArrayBuffer` / `Uint8Array` trong `G.transferBodyBytes` (`L5990-L6043`):** QuanX truyền/nhận `ArrayBuffer` qua `$request`/`$response.bodyBytes`, nên lớp con `G` bọc JavaScript `Proxy` (`L5871`) chuyển tự động sang `Uint8Array` khi đọc getter và cắt đúng `e.buffer.slice(e.byteOffset, e.byteLength + e.byteOffset)` trước khi gọi `$done`.
 - `adCache` (`YouTubeAdvertiseInfo`) không có TTL/cơ chế hết hạn nếu phân loại nhầm.
