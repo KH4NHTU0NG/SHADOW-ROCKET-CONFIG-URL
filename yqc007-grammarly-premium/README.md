@@ -17,4 +17,4 @@
 
 ## 3. Ranh giới hiệu lực & Rủi ro
 - **Giới hạn backend:** Việc thay đổi `/api/v1/subscription` chỉ làm thay đổi hiển thị trạng thái gói trên giao diện client. Các tính năng ngữ pháp nâng cao, kiểm tra đạo văn và AI của Grammarly đều xử lý và xác thực session/token trực tiếp trên máy chủ Grammarly, nên tài khoản miễn phí không được cấp quyền sử dụng các endpoint server-side trả phí.
-- **Lỗi runtime:** Nếu máy chủ trả về phản hồi không phải JSON hợp lệ (ví dụ HTML lỗi mạng hoặc body rỗng), `JSON.parse(body)` tại `L23` sẽ ném exception không được bắt.
+- **Lỗi runtime & Lệch schema (`L23-L334`):** Nếu máy chủ trả về phản hồi không phải JSON hợp lệ (ví dụ HTML lỗi mạng hoặc body rỗng), `JSON.parse(body)` tại `L23` sẽ ném exception không được bắt dù kết quả parse sau đó cũng bị ghi đè hoàn toàn. Việc thay thế cứng toàn bộ JSON (`2022-07-16`) khiến phản hồi mất toàn bộ metadata tài khoản thực từ server (như `institutionPlans` thực tế hoặc trường mới ở các phiên bản app sau `v2.2.0`).
