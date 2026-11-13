@@ -43,4 +43,5 @@ flowchart LR
 
 ## 4. Điểm yếu & Ranh giới hiệu lực
 - **Bug nhánh `else` (`L2290-L2297`):** Nhánh `else` chỉ gửi notification cảnh báo lỗi khớp route nhưng **thiếu `return`**, nên code chạy tiếp xuống lệnh `body.buffer.slice(...)` trên QX khi `body` còn `undefined`, gây lỗi runtime `TypeError`.
+- **Phân tích cấu trúc `oneof` trong `UcsResponse` (`L2080-L2135`):** Schema `UcsResponse` định nghĩa hai nhánh `oneof` (`resolveResult`: `ResolveResponse | Error` và `accountAttributesResult`: `AccountAttributesResponse | Error`), trong đó `Configuration.assignedValues` (`L2126-L2130`) chỉ được khai báo để `protobufjs` đọc/giữ nguyên dữ liệu Remote Config gốc khi encode lại mà không chỉnh sửa nội dung. Script cũng giả định `ucsResponseV0.success.customization.success.accountAttributesSuccess` luôn tồn tại ở trạng thái success, thiếu kiểm tra nhánh `error` nếu server trả lỗi UCS.
 - **Giới hạn chất lượng âm thanh:** Quyền stream bitrate `Very High` (Ogg Vorbis 320kbps) vẫn do backend kiểm tra trước khi cấp khóa/luồng phát; chính file `spotify.module` gốc cũng cảnh báo không đặt chất lượng âm thanh ở mức tối đa.
