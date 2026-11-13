@@ -17,7 +17,7 @@ Kho lưu trữ và tài liệu **phân tích kỹ thuật tĩnh (Reverse Enginee
 | 5 | [vuong2023-locket-ohoang7](./vuong2023-locket-ohoang7/README.md) | `vuong2023/shad` (`Ohoang7`) | Locket / RevenueCat (`api.revenuecat.com/.+/(receipts\|subscribers/...)`) | `http-response` (**JSON**) | `200 OK` |
 | 6 | [app2smile-spotify-proto](./app2smile-spotify-proto/README.md) | `app2smile/rules` | Spotify (`spclient*/bootstrap/v1/bootstrap`, `user-customization-service/v1/customize`) | `http-response` (**Protobuf** `protobufjs` `light`) | `200 OK` |
 | 8 | [app2smile-spotify-json](./app2smile-spotify-json/README.md) | `app2smile/rules` | Spotify (`spclient*/(artistview/v1/artist\|album-entity-view/v2/album)/`) | `http-request` (**URL Rewrite**) | `200 OK` |
-| 9 | [app2smile-spotify-lyric](./app2smile-spotify-lyric/README.md) | `app2smile/rules` | Spotify (`spclient.wg.spotify.com/color-lyrics/v2/track/`) | `http-response` (**Protobuf** + Baidu API) | `200 OK` |
+| 9 | [app2smile-spotify-lyric](./app2smile-spotify-lyric/README.md) | `app2smile/rules` | Spotify (`spclient.wg.spotify.com/color-lyrics/v2/track/`) | `http-response` (**Protobuf** + Baidu API, kèm [`spotify-lyric.clean.js`](./app2smile-spotify-lyric/spotify-lyric.clean.js)) | `200 OK` |
 
 ---
 
@@ -43,7 +43,35 @@ flowchart LR
 
 ---
 
-## 3. Tài Liệu Tham Chiếu Gốc
+## 3. Phân Tích Khả Năng Thực Thi (`.fmt.js`) & Lỗi Kỹ Thuật Tĩnh
+
+1. **Khả năng chạy của các bản `.fmt.js`:**
+   - **Cú pháp:** Toàn bộ `11` file `.js` và `.fmt.js` đều qua kiểm tra cú pháp `node --check` với exit code `0`. Việc beautify không làm đổi ngữ nghĩa AST của JavaScript so với bản minified, nhưng làm tăng kích thước tải/parse (ví dụ `youtube.response.fmt.js` từ `132,973 B` lên `251K`).
+   - **Phụ thuộc môi trường:** Không chạy được trực tiếp bằng `node` thuần vì đòi hỏi các biến toàn cục do Shadowrocket / Surge / Loon / Quantumult X tiêm vào (`$request`, `$response`, `$done`, `$httpClient` / `$task`).
+   - **Lỗi sẵn có giữ nguyên từ bản gốc:**
+
+| Tệp phân tích | Điểm lỗi kỹ thuật phát hiện | Tác động |
+| :--- | :--- | :--- |
+| `spotify-proto.fmt.js` (`L2290-L2297`) | Nhánh `else` không có `return` trước `body.buffer.slice(...)` | Gây `TypeError` trên QuanX khi URL không khớp |
+| `Locket_Ohoang7.fmt.js` (`L8-L33`) | Không check `User-Agent` null, không `try/catch` JSON, `s === undefined` | Dễ crash khi response lỗi hoặc thiếu header |
+| `youtube.response.fmt.js` (`L5574`, `L5615`) | `n[o].baseUrl` khi `captionTracks` rỗng; `ni()` đọc `l[r + n]` ở cuối mảng | Bỏ qua xử lý nếu lỗi `Pi()` thoát vào `catch` của `Ki()` |
+| `GrammarlyPremiumCrack.js` / `soundcloud.js` | Thiếu check HTTP status và `try/catch` quanh `JSON.parse` | Exception chưa bắt nếu upstream trả HTML/lỗi mạng |
+| `spotify-lyric.fmt.js` (`L2506`, `L2509`, `L2541`) | `split('=')` cắt khóa bí mật, log lộ `$argument`, lệch hoa/thường `Content-Type` | Rò rỉ API key và hỏng key chứa ký tự `=` |
+
+---
+
+## 4. Kiểm Thử Tĩnh & Unit Test Cho Module Hợp Lệ (`spotify-lyric.clean.js`)
+
+Riêng kịch bản dịch lời bài hát hợp lệ không liên quan tới vượt rào thu phí ([`spotify-lyric.clean.js`](./app2smile-spotify-lyric/spotify-lyric.clean.js)) đã được viết lại sạch lỗi và kiểm chứng tự động bằng Node.js (`tests/test_spotify_lyric.js`):
+
+```sh
+node --check app2smile-spotify-lyric/spotify-lyric.clean.js && \
+node tests/test_spotify_lyric.js
+```
+
+---
+
+## 5. Tài Liệu Tham Chiếu Gốc
 - [1] Maasea YouTube Response & Module: `https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js` | `https://raw.githubusercontent.com/Maasea/sgmodule/master/YouTube.Enhance.sgmodule`
 - [2] yqc007 Grammarly: `https://raw.githubusercontent.com/yqc007/QuantumultX/master/GrammarlyPremiumCrack.js`
 - [3] Marol62926 SoundCloud: `https://raw.githubusercontent.com/Marol62926/MarScrpt/main/soundcloud.js`
