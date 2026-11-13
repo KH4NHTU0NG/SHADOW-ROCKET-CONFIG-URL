@@ -17,4 +17,4 @@ Chỉnh sửa JSON phản hồi hồ sơ/cấu hình tài khoản từ API Sound
 
 ## 3. Ranh giới hiệu lực & Rủi ro
 - **Giới hạn backend:** Có thể ẩn quảng cáo phía client và đổi giao diện sang Go+, nhưng quyền cấp URL audio `hq_audio` hoặc giải mã nhạc offline vẫn do máy chủ SoundCloud kiểm tra theo token/account trước khi phát hành file media.
-- **Thiếu kiểm tra lỗi:** Không kiểm tra HTTP status code và không bọc `try/catch` quanh `JSON.parse(body)`.
+- **Thiếu kiểm tra lỗi (`L1-L2`, `L16`, `L70`):** Không kiểm tra HTTP status code, không bọc `try/catch` quanh `JSON.parse(body)`, và nếu phản hồi trả về JSON `null` hoặc primitive (`typeof obj !== 'object'`), lệnh gán `obj.plan = ...` tại `L4` (nối bằng toán tử dấu phẩy `,` tới `L70`) sẽ ném `TypeError`. Ngoài ra ghi đè nguyên mảng `obj.features` (`L18-L70`) sẽ làm mất các feature flag khác từ server ngoài 7 mục được khai báo cứng.
