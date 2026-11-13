@@ -3,7 +3,8 @@
 - **URL gốc:** `https://raw.githubusercontent.com/app2smile/rules/master/js/spotify-lyric.js`
 - **Tệp trong thư mục:**
   - [`spotify-lyric.js`](./spotify-lyric.js) — Bản gốc minified (`80,887 B`, 147 dòng).
-  - [`spotify-lyric.fmt.js`](./spotify-lyric.fmt.js) — Bản beautify để phân tích tĩnh (`2,959 dòng`).
+  - [`spotify-lyric.fmt.js`](./spotify-lyric.fmt.js) — Bản beautify để phân tích tĩnh (`2,958` dòng `wc -l`).
+  - [`spotify-lyric.clean.js`](./spotify-lyric.clean.js) — Bản tái cấu trúc sạch (emoji-free) đã vá toàn bộ lỗi bảo mật/parse cho mục đích dịch lời bài hát hợp lệ qua API cá nhân.
 
 ## 1. Công dụng
 Chặn phản hồi lời bài hát dạng Protobuf nhị phân từ `^https:\/\/spclient\.wg\.spotify\.com\/color-lyrics\/v2\/track\/` (trên `http-response` với `binary-body-mode=1`), trích xuất lời gốc không phải tiếng Trung (`language !== 'z1'`), gửi sang **Baidu Translate API** để dịch sang tiếng Trung (`zh`), và chèn bản dịch vào trường `alternatives` giữ nguyên đồng bộ từng dòng trên giao diện Spotify.
@@ -45,3 +46,10 @@ sequenceDiagram
 - **Lỗi cắt khóa có dấu `=` (`L2506`):** `item.split('=')` làm mất phần sau dấu `=` nếu `securityKey` chứa `=`.
 - **Thiếu `try/catch` & ghi đè phiên âm:** Không bọc `try/catch` quanh `ColorLyricsResponse.fromBinary` (`L2494`) và `JSON.parse(data)` (`L2551`); gán đè `lyrics.alternatives` sẽ làm mất lời phiên âm Romaji/Pinyin gốc nếu bài hát có sẵn.
 - **Kiểm tra header phân biệt hoa thường:** `Env.post` (`L2829`) kiểm tra `headers['Content-Type']` viết hoa trong khi script truyền `'content-type'` chữ thường (`L2541`).
+
+## 5. Cải tiến & Kiểm thử trong `spotify-lyric.clean.js`
+Bản [`spotify-lyric.clean.js`](./spotify-lyric.clean.js) giữ nguyên runtime `@protobuf-ts/runtime` v2.9.0 và `js-md5` trong IIFE cô lập (tránh ghi đè `module.exports` khi nạp trên Node.js), thay thế khối `Env` cũ bằng adapter gọn nhẹ `createProxyRuntime` và bổ sung các bản vá:
+1. **`parseArgument()` an toàn bí mật:** Tách cặp khóa/giá trị tại dấu `=` đầu tiên (bảo toàn `securityKey` chứa `=`/`+`), giới hạn allowlist khóa cấu hình (`appid`, `securityKey`, `to`, `skipLanguage`, `altLanguage`) để chặn prototype pollution, hỗ trợ `to=vie` (tiếng Việt) hoặc `to=zh` (tiếng Trung), và **không bao giờ in `$argument`** ra thông báo/log khi gặp cặp sai cú pháp.
+2. **Chống crash & rò rỉ request rỗng:** Kiểm tra `appid`/`securityKey` khác rỗng trước khi gọi Baidu API; bọc `try/catch` quanh `ColorLyricsResponse.fromBinary`, `JSON.parse` và `ColorLyricsResponse.toBinary`.
+3. **Bảo toàn track lời phụ có sẵn:** `applyTranslations()` chuẩn hóa `Content-Type` PascalCase và giữ lại các entry `alternatives` khác (ví dụ Romaji/Pinyin) thay vì ghi đè toàn bộ mảng.
+4. **Kiểm thử tự động trên Node.js:** Đã xác thực qua [`../tests/test_spotify_lyric.js`](../tests/test_spotify_lyric.js) (`node tests/test_spotify_lyric.js` — `6/6` test suite pass: round-trip Protobuf nhị phân dưới mock Surge/Shadowrocket & QuanX `ArrayBuffer`, kiểm tra chữ ký MD5, chặn rò rỉ secret, và xử lý lỗi biên).
